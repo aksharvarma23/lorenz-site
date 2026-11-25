@@ -53,6 +53,7 @@
     { name: "Bistable: far start", r: 24.4, x0: [1, 1, 1], T: 100 },
     { name: "Butterfly", r: 28, x0: [1, 1, 1], T: 60 },
     { name: "Periodic window", r: 100.5, x0: [1, 1, 1], T: 60 },
+    { name: "Window, 2 peaks", r: 160, x0: [1, 1, 1], T: 60 },
     { name: "Single cycle", r: 350, x0: [1, 1, 1], T: 40 },
   ];
   let runT = T_RUN;
@@ -172,6 +173,19 @@
     v.innerHTML = `<span class="dot"></span><span>Long-run behaviour: <b>${verdict.text}</b></span>`;
   }
 
+  // ---------------------------------------------------------------- CSV download of the trajectory shown
+  $("csvBtn").addEventListener("click", () => {
+    if (!lastTraj) return;
+    const { t, X, r } = lastTraj;
+    const rows = ["t,x,y,z"];
+    for (let i = 0; i < t.length; i++) rows.push(`${t[i].toFixed(4)},${X[0][i].toFixed(8)},${X[1][i].toFixed(8)},${X[2][i].toFixed(8)}`);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([rows.join("\n")], { type: "text/csv" }));
+    a.download = `lorenz_r${r}_x0_${lastTraj.x0.join("_")}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+
   // ---------------------------------------------------------------- 4. sensitivity
   let lastSens = null;
   function renderSensitivity() {
@@ -219,7 +233,7 @@
         run("trajectory", Object.assign({ T: runT }, p)),
         run("sensitivity", Object.assign({ d0: 1e-10, eps: 1e-3, Tavg: 200 }, p)),
       ]);
-      if (!tr.stale) { lastTraj = tr.res; renderTrajectory(); $("pc").classList.remove("busy"); }
+      if (!tr.stale) { lastTraj = Object.assign(tr.res, { r: s.r, x0: s.x0 }); renderTrajectory(); $("pc").classList.remove("busy"); }
       if (!se.stale) { lastSens = se.res; renderSensitivity(); $("pd").classList.remove("busy"); }
       $("status").textContent = `Updated in ${Math.round(performance.now() - t0)} ms.`;
     } catch (e) {
