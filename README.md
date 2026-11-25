@@ -1,54 +1,53 @@
 # Lorenz System Explorer (website)
 
-Interactive simulator for the BITS F316 project "Bifurcations and the Limits of Prediction in the Lorenz System"
+A simple simulator for the BITS F316 project "Bifurcations and the Limits of Prediction in the Lorenz System"
 (Akshar Ananya Varma, 2023B5A80799H).
 
-It is a static site: plain HTML, CSS and JavaScript, with no build step. All the maths runs in the visitor's browser
-(`js/lorenz.js`, in a Web Worker `js/worker.js`), so it needs no server.
+    dx/dt = sigma (y - x),   dy/dt = r x - y - x z,   dz/dt = x y - b z,   sigma = 10, b = 8/3
 
-## Deploy on Vercel
+Pick a heating level r (or one of nine presets) and a starting point. Four panels update, one per course learning outcome:
 
-**Option 1: Vercel CLI (quickest)**
-```bash
-npm i -g vercel
-cd lorenz-site
-vercel            # first time: log in, accept the defaults
-vercel --prod     # publishes to https://<project-name>.vercel.app
-```
+| Panel | Shows | Course outcome |
+|---|---|---|
+| 1. Fixed points and their stability | origin, C+, C-, Jacobian eigenvalues, stable / unstable | A: classifying fixed points |
+| 2. Where your r sits among the bifurcations | bands with transitions at 1, 13.93, 24.06, 24.74 | E: bifurcation analysis |
+| 3. Trajectory | 3-D path, x(t), steady / periodic / chaotic label, CSV download | C: solving ODEs on a computer |
+| 4. Is it chaotic? | twin runs 1e-10 apart, lambda_1, prediction horizon | F: conditions for chaos |
 
-**Option 2: GitHub + Vercel dashboard**
-1. Create a GitHub repository and upload the contents of this folder (index.html must be at the top level).
-2. On vercel.com: Add New -> Project -> Import the repository.
-3. Framework Preset: **Other**. Build Command: leave empty. Output Directory: leave empty (the root).
-4. Deploy. Every push to the repository redeploys automatically.
+The nine presets are the nine runs of the 11 November time-series data (r = 0.5, 10, 20, 24.4 near C+, 24.4 far, 28, 100.5, 160, 350).
+
+It is a static site: plain HTML, CSS and JavaScript, no build step. All the maths runs in the visitor's browser.
+
+## Deploying
+
+This folder is a Git repository (GitHub `aksharvarma23/lorenz-site`) connected to Vercel: every push to `main`
+redeploys the site. In GitHub Desktop: commit, then Push origin.
 
 ## Run locally
+
 ```bash
-cd lorenz-site
-python3 -m http.server 8000     # then open http://localhost:8000
+python -m http.server 8000     # inside this folder, then open http://localhost:8000
 ```
-Opening index.html directly from the file system will not work, because browsers block Web Workers and
-`fetch` on `file://` pages.
+
+Opening index.html directly from the file system will not work: browsers block Web Workers on `file://` pages.
 
 ## What is inside
+
 | Path | Contents |
 |---|---|
 | `index.html` | the page |
-| `css/style.css` | styles (light and dark themes) |
-| `js/lorenz.js` | numerical core: Dormand-Prince 5(4) integrator (rtol 1e-10, atol 1e-12), fixed points and eigenvalues, shooting for the homoclinic (13.9266) and attracting (24.059) values, tangent-linear Lyapunov exponent, z-maxima classifier |
+| `css/style.css` | styles |
+| `js/lorenz.js` | numerical core: Dormand-Prince 5(4) solver (rtol 1e-10, atol 1e-12), fixed points and eigenvalues, z-maxima classifier, twin runs, tangent-linear Lyapunov exponent |
 | `js/worker.js` | runs the heavy computations off the main thread |
-| `js/app.js` | interface and plots |
+| `js/app.js` | interface, presets, plots, CSV download |
 | `vendor/plotly.min.js` | Plotly.js 2.35.2 (bundled so the site does not depend on a CDN) |
 | `assets/` | the favicon |
+| `python/` | the Python scripts (not deployed): see below |
 
-## Checks (browser results vs the Python project)
-| Quantity | Browser | Python |
-|---|---|---|
-| Homoclinic explosion (shooting) | 13.9266 | 13.9266 |
-| Chaos becomes attracting (shooting) | 24.059 | 24.059 |
-| Same for sigma = 16, b = 4 | 19.377 / 32.360 | 19.38 / 32.36 |
-| lambda_1 at r = 28 (200 time units) | 0.915 | 0.915 |
-| lambda_1 at r = 20 (settles on C+) | -0.154 | -0.154 (eigenvalue -0.155) |
-| r = 100.5 / 160 / 350 | period 3 / 2 / 1 | period 3 / 2 / 1 |
+## Python scripts
 
-A shareable link keeps the settings in the address, for example `/#r=24.4&sigma=10&b=2.666667&x0=1,1,1&T=100`.
+- `python/timeseries/`: the exact scripts used for the 11 November time-series progress update (data and figures).
+- `python/website/lorenz_website.py`: the website's four calculations in Python, so every number on the page can be
+  checked (`python lorenz_website.py --all`).
+
+See `python/README.md`. `.vercelignore` keeps this folder off the website.
